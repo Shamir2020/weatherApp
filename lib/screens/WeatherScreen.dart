@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:weather/weather.dart';
-import 'dart:async';
+import '../style/styles.dart';
 
 class WeatherPage extends StatefulWidget {
   const WeatherPage({Key? key}) : super(key: key);
@@ -12,13 +12,13 @@ class WeatherPage extends StatefulWidget {
 
 class _WeatherPageState extends State<WeatherPage> {
   WeatherFactory wf = new WeatherFactory('d074b2abe77b5a9a3995e3a365e672fa');
-
+  bool loading = true;
   getLocation() async{
     Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
     return position;
   }
 
-  Map<String,String> weatherInfo = {'temp':""};
+  Map<String,String> weatherInfo = {'temp':"",'areaName':"","country":"",'wind':"",'humidity':"",'pressure':"",'feelslike':''};
 
   Future<bool> _handleLocationPermission() async {
     bool serviceEnabled;
@@ -48,10 +48,20 @@ class _WeatherPageState extends State<WeatherPage> {
   }
 
   Future<void> getWeather() async{
-    Position location = getLocation();
-    Weather w = await wf.currentWeatherByLocation(location.latitude, location.latitude);
-    print(location);
-    weatherInfo['temp'] = w.temperature.toString();
+    Position location = await getLocation();
+    Weather w = await wf.currentWeatherByLocation(location.latitude, location.longitude);
+
+
+    setState(() {
+      weatherInfo['temp'] = w.temperature.toString();
+      weatherInfo['country'] = w.country.toString();
+      weatherInfo['areaName'] = w.areaName.toString();
+      weatherInfo['wind'] = w.windSpeed.toString();
+      weatherInfo['humidity'] = w.humidity.toString();
+      weatherInfo['pressure'] = w.pressure.toString();
+      weatherInfo['feelslike'] = w.tempFeelsLike.toString();
+      loading = false;
+    });
   }
 
   @override
@@ -65,6 +75,7 @@ class _WeatherPageState extends State<WeatherPage> {
 
   @override
   Widget build(BuildContext context) {
+    var width = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -72,7 +83,97 @@ class _WeatherPageState extends State<WeatherPage> {
         elevation: 1,
         title: Text('Weather App'),
       ),
-      body: Text(weatherInfo['temp']!),
+      body: RefreshIndicator(
+        onRefresh: () async{
+          setState(() {
+            loading = true;
+          });
+          await getLocation();
+          setState(() {
+            loading = false;
+          });
+        },
+        child: ListView(
+          children:[ Center(
+            child: loading?CircularProgressIndicator():Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(height: 40.0,),
+                Text('Weather App',style: TextHead4(colorBlack),),
+                SizedBox(height: 20.0,),
+                Image.asset('images/logo.png'),
+                SizedBox(height: 20.0,),
+                Text(weatherInfo['temp']!,style: TextHead1(colorBlack),),
+                Text(weatherInfo['areaName']!,style: TextHead1(colorBlack),),
+                Text(weatherInfo['country']!,style: TextHead1(colorBlack),),
+                SizedBox(height: 30.0,),
+                Text('Additional Information',style: TextHead1(colorBlack),),
+                SizedBox(height: 30.0,),
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: width*0.40,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Wind',style: TextHead5(colorBlack),),
+                            SizedBox(width: width*0.15,),
+                            Text(weatherInfo['wind']!,style: TextHead5(colorBlack),),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: width*0.05,),
+                      Container(
+                        width: width*0.40,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Humidity',style: TextHead5(colorBlack),),
+                            SizedBox(width: width*0.15,),
+                            Text(weatherInfo['humidity']!,style: TextHead5(colorBlack),),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: width*0.40,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Pressure',style: TextHead5(colorBlack),),
+
+                            Text(weatherInfo['pressure']!,style: TextHead5(colorBlack),),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: width*0.05,),
+                      Container(
+                        width: width*0.40,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Feels Like',style: TextHead5(colorBlack),),
+
+                            Text(weatherInfo['feelslike']!,style: TextHead5(colorBlack),),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          )]
+        ),
+      )
     );
   }
 }
